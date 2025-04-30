@@ -13,8 +13,10 @@ t3hwdev:
     enable-file-appender: false
     log-directory: ${LOG_DIRECTORY:log}
 
-# logging:
-#   level:
+logging:
+  level:
+    '[org.jooq.Constants]': DEBUG
+    # '[org.hibernate]': DEBUG
     # '[dev.t3hw.package.name]': DEBUG
     # '[dev.t3hw.package.name.Class]': DEBUG
 
@@ -76,9 +78,9 @@ spring:
       max-lifetime: 600000 # 10 minutes 
       idle-timeout: 180000 # 5 minutes  
       connection-timeout: 30000 # 30 seconds
-#   jpa:
+  # jpa:
+  #   open-in-view: false
 #     # show-sql: true
-#     open-in-view: false
 #     hibernate:
 #       naming:
 #         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl

@@ -7,18 +7,28 @@
     <groupId>dev.t3hw.mhn</groupId>
     <artifactId>mhn</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>db</artifactId>
 
+  <properties>
+    <spring-boot.repackage.skip>true</spring-boot.repackage.skip>
+  </properties>
+
   <dependencies>
-    <dependency>
+    <!-- <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
-    </dependency>
+    </dependency> -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-jooq</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jooq</groupId>
+      <artifactId>jooq</artifactId>
+      <version>3.20.3</version>
     </dependency>
     <dependency>
       <groupId>com.mysql</groupId>
@@ -53,137 +63,138 @@
       <artifactId>common</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>dev.t3hw.mhn</groupId>
-      <artifactId>openapi-spec</artifactId>
-      <version>${project.version}</version>
-    </dependency>
   </dependencies>
 
   <build>
     <plugins>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>sql-maven-plugin</artifactId>
-          <dependencies>
-            <dependency>
-              <groupId>com.h2database</groupId>
-              <artifactId>h2</artifactId> 
-              <version>2.3.232</version>
-            </dependency>
-          </dependencies>
-          <configuration>
-            <driver>org.h2.Driver</driver>
-            <url>jdbc:h2:file:./db/target/h2db/db-init</url>
-            <username>sa</username>
-            <password></password>
-            <autocommit>true</autocommit>
-          </configuration>
-          <executions>
-            <execution>
-              <id>create-db</id>
-              <phase>initialize</phase>
-              <goals>
-                <goal>execute</goal>
-              </goals>
-              <!-- <configuration>
-                <srcFiles>
-                  <srcFile>${sql.dir}/drop_db.sql</srcFile>
-                  <srcFile>${sql.dir}/tables.sql</srcFile>
-                  <srcFile>${sql.dir}/constraints.sql</srcFile>
-                  ... etc ...
-                </srcFiles>
-              </configuration> -->
-            </execution>
-          </executions>
-        </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>sql-maven-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId> 
+            <version>2.3.232</version>
+          </dependency>
+        </dependencies>
+        <configuration>
+          <driver>org.h2.Driver</driver>
+          <url>jdbc:h2:file:./db/target/h2db/db-init</url>
+          <username>sa</username>
+          <password></password>
+          <autocommit>true</autocommit>
+        </configuration>
+        <executions>
+          <execution>
+            <id>create-db</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>execute</goal>
+            </goals>
+            <!-- <configuration>
+              <srcFiles>
+                <srcFile>${sql.dir}/drop_db.sql</srcFile>
+                <srcFile>${sql.dir}/tables.sql</srcFile>
+                <srcFile>${sql.dir}/constraints.sql</srcFile>
+                ... etc ...
+              </srcFiles>
+            </configuration> -->
+          </execution>
+        </executions>
+      </plugin>
 
-        <!-- Flyway Plugin -->
-        <plugin>
-          <groupId>org.flywaydb</groupId>
-          <artifactId>flyway-maven-plugin</artifactId>
-          <version>11.7.0</version>
-          <executions>
-            <execution>
-              <?m2e ignore?>
-              <id>flyway-init-jooq-db</id>
-              <phase>initialize</phase>
-              <goals>
-                <goal>migrate</goal>
-              </goals>
-              <configuration>
-                <schemas>
-                  <schema>db</schema>
-                </schemas>
-                <url>jdbc:h2:file:./db/target/h2db/db-init;DB_CLOSE_ON_EXIT=TRUE;MODE=MYSQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE</url>
-                <user>sa</user>
-                <password></password>
-                <locations>
-                  <location>filesystem:src/main/resources/db/migration</location>
-              </locations>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <version>3.1.0</version>
-            <executions>
-                <execution>
-                  <?m2e execute onConfiguration,onIncremental?>
-                    <id>copy-h2-db</id>
-                    <phase>generate-sources</phase>
-                    <configuration>
-                        <target>
-                            <copy file="./target/h2db/db-init.mv.db" tofile="./target/h2db/db-jooq.mv.db" overwrite="true" />
-                        </target>
-                    </configuration>
-                    <goals>
-                        <goal>run</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-
-        <!-- jOOQ Plugin -->
-        <plugin>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq-codegen-maven</artifactId>
-            <executions>
-                <execution>
-                    <id>jooq-codegen</id>
-                    <phase>generate-sources</phase>
-                    <goals>
-                        <goal>generate</goal>
-                    </goals>
-                </execution>
-            </executions>
+      <!-- Flyway Plugin -->
+      <plugin>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-maven-plugin</artifactId>
+        <version>11.7.0</version>
+        <executions>
+          <execution>
+            <?m2e ignore?>
+            <id>flyway-init-jooq-db</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>migrate</goal>
+            </goals>
             <configuration>
-                <jdbc>
-                  <driver>org.h2.Driver</driver>
-                  <url>jdbc:h2:file:./db/target/h2db/db-jooq;DB_CLOSE_ON_EXIT=TRUE;MODE=MYSQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE</url>
-                  <user>sa</user>
-                  <password></password>
-                </jdbc>
-                <generator>
-                  <database>
-                    <includes>.*</includes>
-                    <excludes>
-                      flyway_schema_history
-                    </excludes>
-                    <inputSchema>db</inputSchema>
-
-                  </database>
-                  <target>
-                    <packageName>dev.t3hw.mhn.db.jooq</packageName>
-                    <directory>src/main/java</directory>
-                  </target>
-                    
-                </generator>
+              <schemas>
+                <schema>db</schema>
+              </schemas>
+              <url>jdbc:h2:file:./db/target/h2db/db-init;DB_CLOSE_ON_EXIT=TRUE;MODE=MYSQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE</url>
+              <user>sa</user>
+              <password></password>
+              <locations>
+                <location>filesystem:src/main/resources/db/migration</location>
+            </locations>
             </configuration>
-        </plugin>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <?m2e execute onConfiguration,onIncremental?>
+            <id>copy-h2-db</id>
+            <phase>generate-sources</phase>
+            <configuration>
+              <target>
+                <copy file="./target/h2db/db-init.mv.db" tofile="./target/h2db/db-jooq.mv.db" overwrite="true" />
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- jOOQ Plugin -->
+      <plugin>
+        <groupId>org.jooq</groupId>
+        <artifactId>jooq-codegen-maven</artifactId>
+        <version>3.20.3</version>
+        <executions>
+          <execution>
+            <id>jooq-codegen</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <jdbc>
+            <driver>org.h2.Driver</driver>
+            <url>jdbc:h2:file:./db/target/h2db/db-jooq;DB_CLOSE_ON_EXIT=TRUE;MODE=MYSQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE</url>
+            <user>sa</user>
+            <password></password>
+          </jdbc>
+          <generator>
+            <database>
+              <includes>.*</includes>
+              <excludes>
+                flyway_schema_history
+              </excludes>
+              <inputSchema>db</inputSchema>
+            </database>
+            <target>
+              <packageName>dev.t3hw.mhn.db.jooq</packageName>
+              <directory>src/main/java</directory>
+            </target>
+            <generate>
+              <daos>true</daos>
+              <springAnnotations>true</springAnnotations>
+              <springDao>true</springDao>
+              <pojosEqualsAndHashCodeIncludePrimaryKeyOnly>true</pojosEqualsAndHashCodeIncludePrimaryKeyOnly>
+              <validationAnnotations>true</validationAnnotations>
+            </generate>
+          </generator>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 

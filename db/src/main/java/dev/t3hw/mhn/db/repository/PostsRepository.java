@@ -1,59 +1,84 @@
 package dev.t3hw.mhn.db.repository;
 
+import static dev.t3hw.mhn.db.jooq.Tables.POSTS;
+
+import org.jooq.Configuration;
 import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
-import static dev.t3hw.mhn.db.jooq.Tables.POSTS;
-
+import dev.t3hw.mhn.db.jooq.tables.daos.PostsDao;
+import dev.t3hw.mhn.db.jooq.tables.pojos.Posts;
 import dev.t3hw.mhn.db.jooq.tables.records.PostsRecord;
-import dev.t3hw.mhn.model.PostDTO;
 
 @Repository
-public class PostsRepository {
+public class PostsRepository extends PostsDao {
 
-    private final DSLContext dslContext;
+    private final DSLContext ctx;
 
-    public PostsRepository(DSLContext dslContext) {
-        this.dslContext = dslContext;
+    public PostsRepository(DSLContext ctx, Configuration configuration) {
+        super(configuration);
+        this.ctx = ctx;
     }
 
-    public List<PostDTO> findAll() {
-        return dslContext.selectFrom(POSTS)
-                .fetchInto(PostDTO.class);
+    @Transactional
+    public Posts create(Posts post) {
+        PostsRecord postRecord = ctx.newRecord(POSTS, post);
+        postRecord.reset(POSTS.VOTES);
+        postRecord.store();
+        return postRecord.into(Posts.class);
     }
 
-    // public PostDTO findById(Long id) {
-    //     return dslContext.selectFrom(POSTS)
-    //             .where(POSTS.ID.eq(id))
-    //             .fetchOneInto(PostDTO.class);
-    // }
+    @Transactional
+    public boolean existsByIdForUpdate(Long id) {
+        return ctx.fetchExists(ctx.selectOne()
+                .from(POSTS)
+                .where(POSTS.ID.eq(id))
+                .forUpdate());
+    }
 
-    // @Transactional
-    // public PostDTO create(PostDTO post) {
-    //     PostsRecord postRecord = dslContext.newRecord(POSTS, post);
-    //     postRecord.store();
-    //     return postRecord.into(PostDTO.class);
-    // }
+    @Transactional
+    public Posts updateContent(Posts post) {
+        ctx.update(POSTS)
+                .set(POSTS.CONTENT, post.getContent())
+                .where(POSTS.ID.eq(post.getId()))
+                .execute();
+        return findById(post.getId());
+    }
 
-    // @Transactional
-    // public PostDTO update(PostDTO post) {
-    //     dslContext.update(POSTS)
-    //             .set(POSTS.CONTENT, post.getContent())
-    //             .where(POSTS.ID.eq(post.getId()))
-    //             .execute();
-    //     return findById(post.getId());
-    // }
-
-    // @Transactional
-    // public void deleteById(Long id) {
-    //     dslContext.deleteFrom(POSTS)
-    //             .where(POSTS.ID.eq(id))
-    //             .execute();
-    // }
+    public enum VoteAction {
+        UPVOTE(POSTS.VOTES.plus(1)),
+        DOWNVOTE(POSTS.VOTES.minus(1));
     
+        private final Field<Integer> action;
+        
+        VoteAction(Field<Integer> action) {
+            this.action = action;
+        }
+
+        public static VoteAction fromString(String action) {
+            return switch (action.toLowerCase()) {
+                case "upvote" -> UPVOTE;
+                case "downvote" -> DOWNVOTE;
+                default -> throw new IllegalArgumentException("Unknown action: " + action);
+            };
+        }
+    }
+
+    @Transactional
+    public Posts updateVoteCount(Posts post, VoteAction voteAction) {
+        
+        long postId = post.getId().longValue();
+
+        ctx.update(POSTS)
+                .set(POSTS.VOTES, voteAction.action)
+                .where(POSTS.ID.eq(postId))
+                .execute();
+        return findById(postId);
+    }
+
+
     // public List<PostDTO> findAuthorsWithBooks() {
     //     return dslContext.selectDistinct(AUTHOR.asterisk())
     //             .from(AUTHOR)

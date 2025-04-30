@@ -2,21 +2,29 @@ package dev.t3hw.mhn.services;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import dev.t3hw.mhn.db.jpa.repository.PostsJpaRepo;
+import dev.t3hw.mhn.mappers.PostsDTOMapper;
+// import dev.t3hw.mhn.db.jpa.repository.PostsJpaRepo;
 import dev.t3hw.mhn.db.repository.PostsRepository;
+import dev.t3hw.mhn.db.repository.PostsRepository.VoteAction;
+import dev.t3hw.mhn.exceptions.CustomExceptions;
+import dev.t3hw.mhn.model.CreatePostDTO;
 import dev.t3hw.mhn.model.PostDTO;
 import dev.t3hw.mhn.server.MhnApiDelegate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MhnApiService implements MhnApiDelegate {
 
     private final PostsRepository postsRepo;
-    // private final PostsJpaRepo postsJpaRepo;
+    private final PostsDTOMapper postsMapper;
 
     @Override
     public ResponseEntity<List<PostDTO>> getPosts() {
@@ -27,8 +35,44 @@ public class MhnApiService implements MhnApiDelegate {
 
     private ResponseEntity<List<PostDTO>> getPostsWithJooq() {
         var posts = postsRepo.findAll();
-        return ResponseEntity.ok().body(posts);
+        return ResponseEntity.ok().body(postsMapper.toDTOs(posts));
     }
+
+    @Override
+    // public ResponseEntity<IdDTO> createPost(CreatePostDTO createPostDTO) {
+    public ResponseEntity<PostDTO> createPost(CreatePostDTO createPostDTO) {
+        var createdPost = postsRepo.create(postsMapper.fromDTO(createPostDTO));
+        // var res = new IdDTO(createdPost.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(postsMapper.toDTO(createdPost));
+    }
+
+
+    @Override
+    @Transactional
+    public ResponseEntity<PostDTO> upvotePost(Long id, String action) {
+        
+        VoteAction voteAction;
+        try {
+            voteAction = VoteAction.fromString(action);
+        } catch (Exception e) {
+            throw new CustomExceptions.ParsingException("Invalid action: " + action);
+        }
+
+        var exists = postsRepo.existsByIdForUpdate(id);
+
+        if (!exists) {
+            throw new CustomExceptions.NotFoundException("Post not found with id: " + id);
+        }
+
+        var post = postsRepo.findById(id);
+
+        var updatedPost = postsRepo.updateVoteCount(post, voteAction);
+
+        return ResponseEntity.ok(postsMapper.toDTO(updatedPost));
+    }
+
+
+    // private final PostsJpaRepo postsJpaRepo;
 
     // private ResponseEntity<List<PostDTO>> getPostsWithJpa() {
     //     var posts = postsJpaRepo.findAll();
@@ -39,6 +83,4 @@ public class MhnApiService implements MhnApiDelegate {
     //         return postDTO;
     //     }).toList());
     // }
-
-
 }

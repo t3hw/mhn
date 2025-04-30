@@ -5,7 +5,8 @@ package dev.t3hw.mhn.db.jooq.tables.records;
 
 
 import dev.t3hw.mhn.db.jooq.tables.Posts;
-import jakarta.persistence.Entity;
+
+import jakarta.validation.constraints.Size;
 
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
@@ -43,8 +44,23 @@ public class PostsRecord extends UpdatableRecordImpl<PostsRecord> {
     /**
      * Getter for <code>db.posts.content</code>.
      */
+    @Size(max = 1000000000)
     public String getContent() {
         return (String) get(1);
+    }
+
+    /**
+     * Setter for <code>db.posts.votes</code>.
+     */
+    public void setVotes(Integer value) {
+        set(2, value);
+    }
+
+    /**
+     * Getter for <code>db.posts.votes</code>.
+     */
+    public Integer getVotes() {
+        return (Integer) get(2);
     }
 
     // -------------------------------------------------------------------------
@@ -70,11 +86,26 @@ public class PostsRecord extends UpdatableRecordImpl<PostsRecord> {
     /**
      * Create a detached, initialised PostsRecord
      */
-    public PostsRecord(Long id, String content) {
+    public PostsRecord(Long id, String content, Integer votes) {
         super(Posts.POSTS);
 
         setId(id);
         setContent(content);
-        resetChangedOnNotNull();
+        setVotes(votes);
+        resetTouchedOnNotNull();
+    }
+
+    /**
+     * Create a detached, initialised PostsRecord
+     */
+    public PostsRecord(dev.t3hw.mhn.db.jooq.tables.pojos.Posts value) {
+        super(Posts.POSTS);
+
+        if (value != null) {
+            setId(value.getId());
+            setContent(value.getContent());
+            setVotes(value.getVotes());
+            resetTouchedOnNotNull();
+        }
     }
 }
