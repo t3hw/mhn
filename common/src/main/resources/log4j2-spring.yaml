@@ -1,0 +1,106 @@
+Configuration:
+  status: WARN
+  scanPeriod: 30
+  
+  Properties:
+    Property:
+      - name: APPLICATION
+        value: "${spring:t3hwdev.logging.logstash.index-name:-unknown-application}"
+      - name: LEVEL
+        value: "${spring:t3hwdev.logging.level:-info}"
+      - name: GLOBAL_LEVEL
+        value: "${spring:t3hwdev.logging.global-level:-warn}"
+      - name: FILE_APPENDER
+        value: "${spring:t3hwdev.logging.enable-file-appender:-false}"
+      - name: LOG_DIRECTORY
+        value: "${spring:t3hwdev.logging.log-directory:-log}"
+      - name: CONSOLE_PATTERN
+        value: "%style{%d{yyyy-MM-dd HH:mm:ss.SSS}}{yellow} %highlight{%-5level} %style{[%20.40t]}{bright_black} %style{[%20.40c{1}:%L]}{cyan,bold} : %style{%m}{white} %marker%n%rEx{50}"
+      - name: FILE_PATTERN
+        value: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%20.40t] [%20.40c{1}:%L] : %m %marker%n%rEx{50}"
+      - name: JSON_PATTERN
+        value: '{"time":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%p","context":"%X{connector.context}","message":"%m","logger":"%c","line":"%L"}%n'
+
+  Appenders:
+    Console:
+      - name: ConsoleTextAppender
+        target: SYSTEM_OUT
+        PatternLayout:
+          Pattern: "${CONSOLE_PATTERN}"
+
+      - name: ConsoleTextJsonAppender
+        target: SYSTEM_OUT
+        PatternLayout:
+          pattern: "${JSON_PATTERN}"
+    
+      - name: ConsoleJsonAppender
+        JsonTemplateLayout:
+          eventTemplate: |
+            {
+              "time": {
+                "$resolver": "timestamp"
+              },
+              "level": {
+                "$resolver": "level",
+                "field": "name"
+              },
+              "message": {
+                "$resolver": "message"
+              },
+              "logger": {
+                "$resolver": "logger",
+                "field": "name"
+              },
+              "thread": {
+                "$resolver": "thread",
+                "field": "name"
+              },
+              "context": {
+                "$resolver": "mdc",
+                "key": "connector.context"
+              }
+            }
+
+      - name: ConsoleJsonLayout
+        JsonLayout:
+          # compact: true
+          eventEol: true
+          # complete: true
+
+
+    RollingFile:
+      name: FileTextAppender
+      fileName: "${LOG_DIRECTORY}/log.log"
+      filePattern: "${LOG_DIRECTORY}/log-%d{yyyy-MM-dd}.log"
+      PatternLayout:
+        Pattern: "${FILE_PATTERN}"
+      Policies:
+        TimeBasedTriggeringPolicy:
+          interval: 1
+          modulate: true
+        SizeBasedTriggeringPolicy:
+          size: 1MB
+      DefaultRolloverStrategy:
+        max: 10
+
+  Loggers:
+    Logger:
+      name: dev.t3hw
+      level: "${LEVEL}"
+      additivity: false
+      AppenderRef:
+        # - ref: ConsoleTextAppender
+        # - ref: ConsoleJsonAppender
+        # - ref: ConsoleJsonLayout
+        - ref: ConsoleTextJsonAppender
+    
+    Root:
+      level: "${GLOBAL_LEVEL}"
+      additivity: false
+      AppenderRef:
+        # - ref: ConsoleTextAppender
+        # - ref: ConsoleJsonAppender
+        # - ref: ConsoleJsonLayout
+        - ref: ConsoleTextJsonAppender
+        - ref: FileTextAppender
+          condition: "${spring:t3hwdev.logging.enable-file-appender:-false}"

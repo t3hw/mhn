@@ -35,9 +35,10 @@ RUN curl -s "https://get.sdkman.io" | bash
 # this SHELL command is needed to allow using source
 SHELL ["/bin/bash", "-c"]    
 RUN source "$HOME/.sdkman/bin/sdkman-init.sh" \
-    && echo sdkman_auto_answer=true > ${SDKMAN_DIR}/etc/config \
-    && sdk install java 21.0.2-open \
-    && sdk install maven 3.9.5 \
-    && sdk install mvnd 1.0.2
+    && echo sdkman_auto_answer=true > ${SDKMAN_DIR}/etc/config
+RUN source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk install java 21.0.2-open 
+RUN source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk install java 21.0.2-tem
+# RUN source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk install mvnd 1.0.1
+# RUN source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk install mvnd
 
 USER root
